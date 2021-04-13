@@ -1,8 +1,11 @@
 package com.caputo.dscatalog.services;
 
 
+import com.caputo.dscatalog.Repositories.CategoryRepository;
 import com.caputo.dscatalog.Repositories.ProductRepository;
+import com.caputo.dscatalog.dto.CategoryDTO;
 import com.caputo.dscatalog.dto.ProductDTO;
+import com.caputo.dscatalog.entities.Category;
 import com.caputo.dscatalog.entities.Product;
 import com.caputo.dscatalog.services.exceptions.DatabaseException;
 import com.caputo.dscatalog.services.exceptions.ResourceNotFoundException;
@@ -21,6 +24,9 @@ public class ProductService {
 
 	@Autowired
 	private ProductRepository productRep;
+
+	@Autowired
+	private CategoryRepository categoryRep;
 	
 	@Transactional(readOnly = true)
 	public Page<ProductDTO> findAllPaged(PageRequest pageRequest) {
@@ -37,16 +43,16 @@ public class ProductService {
 	@Transactional
     public ProductDTO insert(ProductDTO dto) {
 		Product entity = new Product();
-		entity.setName(dto.getName());
+		copyDtoToEntity(dto, entity);
 		entity = productRep.save(entity);
 		return new ProductDTO(entity);
     }
 
-    @Transactional
+	@Transactional
     public ProductDTO update(Long id, ProductDTO dto) {
 		try {
 			Product entity = productRep.getOne(id);
-			entity.setName(dto.getName());
+			copyDtoToEntity(dto, entity);
 			entity = productRep.save(entity);
 			return new ProductDTO(entity);
 		}
@@ -66,4 +72,18 @@ public class ProductService {
 			throw new DatabaseException("Integrity violation");
 		}
     }
+
+	private void copyDtoToEntity(ProductDTO dto, Product entity) {
+		entity.setName(dto.getName());
+		entity.setDescription(dto.getDescription());
+		entity.setDate(dto.getDate());
+		entity.setImgUrl(dto.getImgUrl());
+		entity.setPrice(dto.getPrice());
+
+		entity.getCategories().clear();
+		for (CategoryDTO cat : dto.getCategories()){
+			Category category = categoryRep.getOne(cat.getId());
+			entity.getCategories().add(category);
+		}
+	}
 }
